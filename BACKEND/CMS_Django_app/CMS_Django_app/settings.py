@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'Receptionist',
     'Pharmacist',
     'Lab_Technician',
-    'Doctor'
+    'Doctor',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -80,8 +81,13 @@ WSGI_APPLICATION = 'CMS_Django_app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'CMS_FINAL',
+        'USER':'root',
+        'PASSWORD' :'Keerthana@2001',
+        'HOST' :'localhost',
+        'PORT':3306
+
     }
 }
 
