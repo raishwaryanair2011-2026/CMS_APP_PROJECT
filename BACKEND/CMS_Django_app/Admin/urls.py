@@ -6,11 +6,27 @@ from .views import (
     DoctorScheduleViewSet
 )
 
+# =========================================================
+# ROUTER CONFIGURATION
+# =========================================================
+
 router = DefaultRouter()
 
-router.register(r'staff', StaffViewSet)
-router.register(r'specializations', SpecializationViewSet)
-router.register(r'doctors', DoctorProfileViewSet)
-router.register(r'schedules', DoctorScheduleViewSet)
+# STAFF MANAGEMENT
+router.register(r'staff', StaffViewSet, basename='staff')
+
+# SPECIALIZATION MANAGEMENT
+router.register(r'specializations', SpecializationViewSet, basename='specialization')
+
+# DOCTOR PROFILE MANAGEMENT
+router.register(r'doctors', DoctorProfileViewSet, basename='doctor')
+
+# DOCTOR SCHEDULE MANAGEMENT
+router.register(r'schedules', DoctorScheduleViewSet, basename='schedule')
+
+
+# =========================================================
+# URL PATTERNS
+# =========================================================
 
 urlpatterns = router.urls

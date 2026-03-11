@@ -18,16 +18,17 @@ from .serializers import (
 
 class StaffViewSet(viewsets.ModelViewSet):
 
-    queryset = Staff.objects.filter(is_deleted=False)
     serializer_class = StaffSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Staff.objects.filter(is_deleted=False)
 
     # CREATE STAFF
     @transaction.atomic
     def create(self, request, *args, **kwargs):
 
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
         staff = serializer.save()
@@ -61,7 +62,6 @@ class StaffViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
 
         instance = self.get_object()
-
         instance.delete()
 
         return Response(
@@ -76,16 +76,30 @@ class StaffViewSet(viewsets.ModelViewSet):
 
 class SpecializationViewSet(viewsets.ModelViewSet):
 
-    queryset = Specialization.objects.filter(is_deleted=False)
-
     serializer_class = SpecializationSerializer
-
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return Specialization.objects.filter(is_deleted=False)
+
+    # CREATE SPECIALIZATION
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        specialization = serializer.save()
+
+        return Response(
+            SpecializationSerializer(specialization).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    # SOFT DELETE SPECIALIZATION
     def destroy(self, request, *args, **kwargs):
 
         instance = self.get_object()
-
         instance.delete()
 
         return Response(
@@ -100,17 +114,17 @@ class SpecializationViewSet(viewsets.ModelViewSet):
 
 class DoctorProfileViewSet(viewsets.ModelViewSet):
 
-    queryset = DoctorProfile.objects.filter(is_deleted=False)
-
     serializer_class = DoctorProfileSerializer
-
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return DoctorProfile.objects.filter(is_deleted=False)
+
+    # CREATE DOCTOR PROFILE
     @transaction.atomic
     def create(self, request, *args, **kwargs):
 
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
         doctor = serializer.save()
@@ -120,10 +134,30 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    def destroy(self, request, *args, **kwargs):
+    # UPDATE DOCTOR PROFILE
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+
+        partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
 
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    # SOFT DELETE DOCTOR PROFILE
+    def destroy(self, request, *args, **kwargs):
+
+        instance = self.get_object()
         instance.delete()
 
         return Response(
@@ -138,19 +172,53 @@ class DoctorProfileViewSet(viewsets.ModelViewSet):
 
 class DoctorScheduleViewSet(viewsets.ModelViewSet):
 
-    queryset = DoctorSchedule.objects.filter(is_deleted=False)
-
     serializer_class = DoctorScheduleSerializer
-
     permission_classes = [IsAuthenticated]
 
-    def destroy(self, request, *args, **kwargs):
+    def get_queryset(self):
+        return DoctorSchedule.objects.filter(is_deleted=False)
+
+    # CREATE DOCTOR SCHEDULE
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        schedule = serializer.save()
+
+        return Response(
+            DoctorScheduleSerializer(schedule).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    # UPDATE DOCTOR SCHEDULE
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+
+        partial = kwargs.pop("partial", False)
 
         instance = self.get_object()
 
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    # SOFT DELETE DOCTOR SCHEDULE
+    def destroy(self, request, *args, **kwargs):
+
+        instance = self.get_object()
         instance.delete()
 
         return Response(
-            {"message": "Schedule deleted"},
+            {"message": "Schedule deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )

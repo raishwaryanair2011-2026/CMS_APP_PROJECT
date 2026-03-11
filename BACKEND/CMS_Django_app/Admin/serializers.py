@@ -28,11 +28,33 @@ class UserSerializer(serializers.ModelSerializer):
             "email": {"required": True}
         }
 
+    # USERNAME VALIDATION
+    def validate_username(self, value):
+
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "Username already exists."
+            )
+
+        if len(value) < 3:
+            raise serializers.ValidationError(
+                "Username must contain at least 3 characters."
+            )
+
+        return value
+
     # EMAIL VALIDATION
     def validate_email(self, value):
 
         if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
-            raise serializers.ValidationError("Enter a valid email address.")
+            raise serializers.ValidationError(
+                "Enter a valid email address."
+            )
+
+        if User.objects.filter(email=value.lower()).exists():
+            raise serializers.ValidationError(
+                "Email already exists."
+            )
 
         return value.lower()
 
@@ -46,7 +68,7 @@ class UserSerializer(serializers.ModelSerializer):
 
         return value
 
-    # CREATE USER WITH HASHED PASSWORD
+    # CREATE USER
     def create(self, validated_data):
 
         user = User.objects.create_user(**validated_data)
@@ -80,10 +102,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         read_only_fields = ["staff_id", "staff_code"]
 
-    # -----------------------------------------------------
     # PHONE VALIDATION
-    # -----------------------------------------------------
-
     def validate_phone(self, value):
 
         if not re.match(r"^(\+91)?[6-9]\d{9}$", value):
@@ -91,12 +110,14 @@ class StaffSerializer(serializers.ModelSerializer):
                 "Enter valid Indian phone number."
             )
 
+        if Staff.objects.filter(phone=value, is_deleted=False).exists():
+            raise serializers.ValidationError(
+                "Phone number already exists."
+            )
+
         return value
 
-    # -----------------------------------------------------
     # ADDRESS VALIDATION
-    # -----------------------------------------------------
-
     def validate_address(self, value):
 
         if len(value.strip()) < 5:
@@ -106,10 +127,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         return value.strip()
 
-    # -----------------------------------------------------
     # QUALIFICATION VALIDATION
-    # -----------------------------------------------------
-
     def validate_qualification(self, value):
 
         if len(value.strip()) < 3:
@@ -124,10 +142,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         return value.strip()
 
-    # -----------------------------------------------------
     # DATE OF BIRTH VALIDATION
-    # -----------------------------------------------------
-
     def validate_date_of_birth(self, value):
 
         today = date.today()
@@ -148,10 +163,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         return value
 
-    # -----------------------------------------------------
     # SALARY VALIDATION
-    # -----------------------------------------------------
-
     def validate_salary(self, value):
 
         if value < 0:
@@ -166,10 +178,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         return value
 
-    # -----------------------------------------------------
-    # CREATE STAFF WITH NESTED USER
-    # -----------------------------------------------------
-
+    # CREATE STAFF WITH USER
     def create(self, validated_data):
 
         user_data = validated_data.pop("user")
@@ -180,10 +189,7 @@ class StaffSerializer(serializers.ModelSerializer):
 
         return staff
 
-    # -----------------------------------------------------
     # UPDATE METHOD
-    # -----------------------------------------------------
-
     def update(self, instance, validated_data):
 
         user_data = validated_data.pop("user", None)
@@ -193,7 +199,11 @@ class StaffSerializer(serializers.ModelSerializer):
             user = instance.user
 
             for attr, value in user_data.items():
-                setattr(user, attr, value)
+
+                if attr == "password":
+                    user.set_password(value)
+                else:
+                    setattr(user, attr, value)
 
             user.save()
 
@@ -228,6 +238,14 @@ class SpecializationSerializer(serializers.ModelSerializer):
                 "Specialization must contain only letters."
             )
 
+        if Specialization.objects.filter(
+                name__iexact=value.strip(),
+                is_deleted=False
+        ).exists():
+            raise serializers.ValidationError(
+                "Specialization already exists."
+            )
+
         return value.strip().title()
 
 
@@ -237,7 +255,11 @@ class SpecializationSerializer(serializers.ModelSerializer):
 
 class DoctorProfileSerializer(serializers.ModelSerializer):
 
-    staff = StaffSerializer(read_only=True)
+    staff = serializers.PrimaryKeyRelatedField(
+        queryset=Staff.objects.filter(is_deleted=False)
+    )
+
+    staff_details = StaffSerializer(source="staff", read_only=True)
 
     class Meta:
         model = DoctorProfile
@@ -246,6 +268,7 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
             "doctor_profile_id",
             "doctor_code",
             "staff",
+            "staff_details",
             "specialization",
             "consultation_fee",
             "max_patient_per_day",
@@ -257,7 +280,6 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
             "doctor_code"
         ]
 
-    # CONSULTATION FEE VALIDATION
     def validate_consultation_fee(self, value):
 
         if value < 0:
@@ -271,6 +293,20 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def validate(self, data):
+
+        staff = data.get("staff")
+
+        if DoctorProfile.objects.filter(
+                staff=staff,
+                is_deleted=False
+        ).exists():
+            raise serializers.ValidationError(
+                "This staff already has a doctor profile."
+            )
+
+        return data
 
 
 # =========================================================
@@ -293,15 +329,35 @@ class DoctorScheduleSerializer(serializers.ModelSerializer):
 
         read_only_fields = ["schedule_id"]
 
-    # COMPLETE OBJECT VALIDATION
     def validate(self, data):
 
+        doctor = data.get("doctor")
         start_time = data.get("start_time")
         end_time = data.get("end_time")
+        day = data.get("day_of_week")
 
         if start_time >= end_time:
             raise serializers.ValidationError(
                 "Start time must be before end time."
+            )
+
+        # Doctor active check
+        if doctor.is_deleted or not doctor.is_active:
+            raise serializers.ValidationError(
+                "Doctor must be active."
+            )
+
+        # Overlapping schedule validation
+        if DoctorSchedule.objects.filter(
+            doctor=doctor,
+            day_of_week=day,
+            start_time__lt=end_time,
+            end_time__gt=start_time,
+            is_deleted=False
+        ).exists():
+
+            raise serializers.ValidationError(
+                "Schedule overlaps with existing schedule."
             )
 
         return data

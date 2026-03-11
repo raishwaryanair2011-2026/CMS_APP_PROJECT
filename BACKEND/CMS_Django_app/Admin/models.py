@@ -11,6 +11,7 @@ from datetime import date
 # =========================================================
 
 class BaseModel(models.Model):
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False, db_index=True)
@@ -19,8 +20,10 @@ class BaseModel(models.Model):
         abstract = True
 
     def delete(self, *args, **kwargs):
+
         if self.is_deleted:
             return
+
         self.is_deleted = True
         self.save(update_fields=["is_deleted", "updated_at"])
 
@@ -30,6 +33,7 @@ class BaseModel(models.Model):
 # =========================================================
 
 class GenderChoices(models.TextChoices):
+
     MALE = "MALE", "Male"
     FEMALE = "FEMALE", "Female"
     OTHER = "OTHER", "Other"
@@ -40,6 +44,7 @@ class GenderChoices(models.TextChoices):
 # =========================================================
 
 class Staff(BaseModel):
+
     staff_id = models.AutoField(primary_key=True)
 
     staff_code = models.CharField(
@@ -74,17 +79,12 @@ class Staff(BaseModel):
 
     address = models.TextField()
 
-    qualification = models.CharField(
-        max_length=255
-    )
+    qualification = models.CharField(max_length=255)
 
     salary = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[
-            MinValueValidator(0),
-            MaxValueValidator(1000000)
-        ]
+        validators=[MinValueValidator(0), MaxValueValidator(1000000)]
     )
 
     is_active = models.BooleanField(default=True)
@@ -128,7 +128,6 @@ class Staff(BaseModel):
         is_new = self.pk is None
 
         self.full_clean()
-
         super().save(*args, **kwargs)
 
         if is_new and not self.staff_code:
@@ -143,7 +142,6 @@ class Staff(BaseModel):
             self.user.is_active = False
 
             self.user.save(update_fields=["is_active"])
-
             self.save(update_fields=["is_active", "updated_at"])
 
     def activate(self):
@@ -154,10 +152,10 @@ class Staff(BaseModel):
             self.user.is_active = True
 
             self.user.save(update_fields=["is_active"])
-
             self.save(update_fields=["is_active", "updated_at"])
 
     def __str__(self):
+
         return f"{self.staff_code} - {self.user.username}"
 
 
@@ -194,10 +192,10 @@ class Specialization(BaseModel):
     def save(self, *args, **kwargs):
 
         self.full_clean()
-
         super().save(*args, **kwargs)
 
     def __str__(self):
+
         return self.name
 
 
@@ -230,18 +228,12 @@ class DoctorProfile(BaseModel):
     consultation_fee = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[
-            MinValueValidator(0),
-            MaxValueValidator(1000000)
-        ]
+        validators=[MinValueValidator(0), MaxValueValidator(1000000)]
     )
 
     max_patient_per_day = models.PositiveIntegerField(
         default=25,
-        validators=[
-            MinValueValidator(25),
-            MaxValueValidator(25)
-        ]
+        validators=[MinValueValidator(25), MaxValueValidator(25)]
     )
 
     is_active = models.BooleanField(default=True)
@@ -269,7 +261,6 @@ class DoctorProfile(BaseModel):
         is_new = self.pk is None
 
         self.full_clean()
-
         super().save(*args, **kwargs)
 
         if is_new and not self.doctor_code:
@@ -277,6 +268,7 @@ class DoctorProfile(BaseModel):
             super().save(update_fields=["doctor_code"])
 
     def __str__(self):
+
         return f"{self.doctor_code} - {self.staff.user.get_full_name()}"
 
 
@@ -285,6 +277,7 @@ class DoctorProfile(BaseModel):
 # =========================================================
 
 class DayOfWeekChoices(models.TextChoices):
+
     MONDAY = "MONDAY", "Monday"
     TUESDAY = "TUESDAY", "Tuesday"
     WEDNESDAY = "WEDNESDAY", "Wednesday"
@@ -310,7 +303,6 @@ class DoctorSchedule(BaseModel):
     )
 
     start_time = models.TimeField()
-
     end_time = models.TimeField()
 
     is_active = models.BooleanField(default=True)
@@ -340,8 +332,8 @@ class DoctorSchedule(BaseModel):
     def save(self, *args, **kwargs):
 
         self.full_clean()
-
         super().save(*args, **kwargs)
 
     def __str__(self):
+
         return f"{self.doctor.doctor_code} - {self.day_of_week}"
