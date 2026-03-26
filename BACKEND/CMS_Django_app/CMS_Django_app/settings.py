@@ -90,14 +90,13 @@ WSGI_APPLICATION = 'CMS_Django_app.wsgi.application'
 
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cms_final_db',
-        'USER':'root',
-        'PASSWORD' :'Keerthana@2001',
-        'HOST' :'localhost',
-        'PORT':3306
-
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "cms_project_demo_db",
+        "USER": "root",
+        "PASSWORD": "root",
+        "HOST": "localhost",
+        "PORT": 3306,
     }
 }
 
